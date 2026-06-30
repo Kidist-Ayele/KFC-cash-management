@@ -40,7 +40,7 @@ export default function CashierLayout({
       <Sidebar 
         role="cashier"
         navItems={cashierNavItems}
-        userName="Abebe B."
+        userName="Lishan B."
         userRole="Cashier"
       />
       {children}

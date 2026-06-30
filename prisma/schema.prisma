@@ -15,6 +15,7 @@ enum Role {
   CASHIER
   MANAGER
   ADMIN
+  SUPER_ADMIN
 }
 
 // Payment channels available
