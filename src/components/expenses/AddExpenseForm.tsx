@@ -22,17 +22,17 @@ export function AddExpenseForm({
   onSubmit,
 }: AddExpenseFormProps) {
   return (
-    <div className="bg-white rounded-xl p-6 border border-gray-200 mb-6">
-      <h2 className="text-xl font-bold mb-4">Add New Expense</h2>
-      <div className="grid grid-cols-4 gap-4">
-        <div className="col-span-2">
+    <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200 mb-4 sm:mb-6">
+      <h2 className="text-lg sm:text-xl font-bold mb-4">Add New Expense</h2>
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="sm:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
           <input
             type="text"
             placeholder="e.g., Cooking oil, Cleaning supplies..."
             value={description}
             onChange={(e) => onDescriptionChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B] text-sm sm:text-base"
           />
         </div>
         
@@ -41,7 +41,7 @@ export function AddExpenseForm({
           <select
             value={category}
             onChange={(e) => onCategoryChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B] text-sm sm:text-base"
           >
             {categories.map(cat => (
               <option key={cat} value={cat}>{cat}</option>
@@ -57,14 +57,14 @@ export function AddExpenseForm({
             placeholder="0.00"
             value={amount || ''}
             onChange={(e) => onAmountChange(parseFloat(e.target.value) || 0)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B] text-sm sm:text-base"
           />
         </div>
       </div>
       <button 
         onClick={onSubmit}
         disabled={!description || amount <= 0}
-        className="mt-4 px-6 py-2 bg-[#E4002B] text-white rounded-lg hover:bg-[#C4002B] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+        className="mt-4 w-full sm:w-auto px-6 py-2 bg-[#E4002B] text-white rounded-lg hover:bg-[#C4002B] font-medium disabled:opacity-50 disabled:cursor-not-allowed"
       >
         Add Expense
       </button>

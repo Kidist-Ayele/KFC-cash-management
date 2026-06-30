@@ -36,20 +36,20 @@ export function PaymentBreakdownChart({ breakdown }: PaymentBreakdownChartProps)
   };
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-gray-200">
-      <h3 className="text-xl font-bold mb-6">Payment Breakdown</h3>
+    <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
+      <h3 className="text-lg sm:text-xl font-bold mb-4 sm:mb-6">Payment Breakdown</h3>
       
-      <div className="space-y-4">
+      <div className="space-y-3 sm:space-y-4">
         {breakdown.map((item) => (
           <div key={item.channel}>
             <div className="flex items-center justify-between mb-2">
               <div className="flex items-center gap-2">
                 <div className={`w-3 h-3 rounded-full ${colors[item.channel as keyof typeof colors]}`}></div>
-                <span className="font-medium text-gray-900">{item.channel.replace('_', ' ')}</span>
-                <span className="text-sm text-gray-500">({item.count} orders)</span>
+                <span className="font-medium text-gray-900 text-sm sm:text-base">{item.channel.replace('_', ' ')}</span>
+                <span className="text-xs sm:text-sm text-gray-500">({item.count})</span>
               </div>
               <div className="text-right">
-                <p className="font-bold text-gray-900">{formatCurrency(item.amount)}</p>
+                <p className="font-bold text-gray-900 text-sm sm:text-base">{formatCurrency(item.amount)}</p>
                 <p className="text-xs text-gray-500">{item.percentage.toFixed(1)}%</p>
               </div>
             </div>
@@ -63,16 +63,16 @@ export function PaymentBreakdownChart({ breakdown }: PaymentBreakdownChartProps)
         ))}
       </div>
 
-      <div className="grid grid-cols-4 gap-3 mt-6 pt-6 border-t">
+      <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-3 mt-4 sm:mt-6 pt-4 sm:pt-6 border-t">
         {breakdown.map((item) => (
           <div 
             key={item.channel}
-            className={`p-3 rounded-lg ${bgColors[item.channel as keyof typeof bgColors]}`}
+            className={`p-2 sm:p-3 rounded-lg ${bgColors[item.channel as keyof typeof bgColors]}`}
           >
-            <p className={`text-xs font-medium ${textColors[item.channel as keyof typeof textColors]} mb-1`}>
+            <p className={`text-xs font-medium ${textColors[item.channel as keyof typeof textColors]} mb-1 truncate`}>
               {item.channel.replace('_', ' ')}
             </p>
-            <p className={`text-lg font-bold ${textColors[item.channel as keyof typeof textColors]}`}>
+            <p className={`text-base sm:text-lg font-bold ${textColors[item.channel as keyof typeof textColors]}`}>
               {item.count}
             </p>
           </div>

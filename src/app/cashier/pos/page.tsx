@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import { useOrderStore } from '@/hooks/useOrderStore';
-import { CashierHeader } from '@/components/shared/CashierHeader';
+import { Header } from '@/components/shared/Header';
 import { POSMenu } from '@/components/cashier/POSMenu';
 import { LiveOrderPanel } from '@/components/cashier/LiveOrderPanel';
 import { TransactionsTable } from '@/components/cashier/TransactionsTable';
@@ -90,10 +90,10 @@ export default function POSPage() {
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden">
-        <CashierHeader title="CASHFLOW PRO" showSearch={true} />
+        <Header showSearch={true} role="cashier" />
 
-        <div className="flex flex-1 overflow-hidden">
-          <div className="flex-1 p-6 overflow-y-auto">
+        <div className="flex flex-col lg:flex-row flex-1 overflow-hidden">
+          <div className="flex-1 p-4 sm:p-6 overflow-y-auto">
             <POSMenu 
               activeCategory={activeCategory}
               onCategoryChange={setActiveCategory}

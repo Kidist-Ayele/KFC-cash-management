@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CashierHeader } from '@/components/shared/CashierHeader';
+import { Header } from '@/components/shared/Header';
 import { AddExpenseForm } from '@/components/expenses/AddExpenseForm';
 import { ExpensesDashboard } from '@/components/expenses/ExpensesDashboard';
 
@@ -56,12 +56,9 @@ export default function ExpensesPage() {
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden">
-        <CashierHeader 
-          title="Expense Dashboard" 
-          subtitle="Track restaurant costs and necessary purchases"
-        />
+        <Header role="cashier" />
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <AddExpenseForm
             description={newExpense.description}
             amount={newExpense.amount}

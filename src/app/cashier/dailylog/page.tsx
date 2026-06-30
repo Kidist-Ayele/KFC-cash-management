@@ -1,7 +1,7 @@
 'use client';
 
 import { useState } from 'react';
-import { CashierHeader } from '@/components/shared/CashierHeader';
+import { Header } from '@/components/shared/Header';
 import { DailySummaryCards } from '@/components/dailylog/DailySummaryCards';
 import { PaymentBreakdownChart } from '@/components/dailylog/PaymentBreakdownChart';
 import { WaiterPerformanceCard } from '@/components/dailylog/WaiterPerformanceCard';
@@ -111,12 +111,9 @@ export default function DailyLogPage() {
   return (
     <>
       <div className="flex-1 flex flex-col overflow-hidden">
-        <CashierHeader 
-          title="Daily Log" 
-          subtitle="Complete overview of today's transactions and performance"
-        />
+        <Header role="cashier" />
 
-        <div className="flex-1 overflow-y-auto p-6">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
           <DailySummaryCards
             totalRevenue={totalRevenue}
             totalOrders={totalOrders}
@@ -124,7 +121,7 @@ export default function DailyLogPage() {
             digitalRevenue={digitalRevenue}
           />
 
-          <div className="grid grid-cols-2 gap-6 mb-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-4 sm:mb-6">
             <PaymentBreakdownChart breakdown={paymentBreakdown} />
             <WaiterPerformanceCard waiters={waiterStats} />
           </div>

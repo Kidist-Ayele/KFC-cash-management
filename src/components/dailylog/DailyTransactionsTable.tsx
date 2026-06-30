@@ -35,17 +35,17 @@ export function DailyTransactionsTable({ transactions, onExport }: DailyTransact
   });
 
   return (
-    <div className="bg-white rounded-xl p-6 border border-gray-200">
-      <div className="flex items-center justify-between mb-4">
+    <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
         <div>
-          <h2 className="text-xl font-bold">All Transactions</h2>
-          <p className="text-sm text-gray-600">Complete log of today's orders</p>
+          <h2 className="text-lg sm:text-xl font-bold">All Transactions</h2>
+          <p className="text-xs sm:text-sm text-gray-600 hidden sm:block">Complete log of today's orders</p>
         </div>
-        <div className="flex gap-2">
+        <div className="flex flex-col sm:flex-row gap-2">
           <select 
             value={statusFilter}
             onChange={(e) => setStatusFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
+            className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
           >
             <option value="All">All Status</option>
             <option value="Paid">Paid</option>
@@ -55,7 +55,7 @@ export function DailyTransactionsTable({ transactions, onExport }: DailyTransact
           <select 
             value={waiterFilter}
             onChange={(e) => setWaiterFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
+            className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
           >
             <option value="All">All Waiters</option>
             {waiters.map(waiter => (
@@ -66,7 +66,7 @@ export function DailyTransactionsTable({ transactions, onExport }: DailyTransact
           <select 
             value={paymentFilter}
             onChange={(e) => setPaymentFilter(e.target.value)}
-            className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
+            className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
           >
             <option value="All">All Payments</option>
             {PAYMENT_CHANNELS.map(channel => (
@@ -77,34 +77,36 @@ export function DailyTransactionsTable({ transactions, onExport }: DailyTransact
           {onExport && (
             <button 
               onClick={onExport}
-              className="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center gap-2"
+              className="px-3 sm:px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center justify-center gap-2"
             >
               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
               </svg>
-              Export CSV
+              <span className="hidden sm:inline">Export CSV</span>
+              <span className="sm:hidden">Export</span>
             </button>
           )}
         </div>
       </div>
       
-      <div className="overflow-x-auto">
+      {/* Desktop Table */}
+      <div className="hidden lg:block overflow-x-auto">
         <table className="w-full">
           <thead>
             <tr className="border-b">
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">TIME</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">ORDER</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">ITEMS</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">WAITER</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">PAYMENT</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">AMOUNT</th>
-              <th className="text-left py-3 px-4 font-semibold text-gray-700">STATUS</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">TIME</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">ORDER</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">ITEMS</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">WAITER</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">PAYMENT</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">AMOUNT</th>
+              <th className="text-left py-3 px-4 font-semibold text-gray-700 text-sm">STATUS</th>
             </tr>
           </thead>
           <tbody>
             {filteredTransactions.length === 0 ? (
               <tr>
-                <td colSpan={7} className="py-8 text-center text-gray-400">
+                <td colSpan={7} className="py-8 text-center text-gray-400 text-sm">
                   No transactions found. Try adjusting filters.
                 </td>
               </tr>
@@ -128,7 +130,7 @@ export function DailyTransactionsTable({ transactions, onExport }: DailyTransact
                       {PAYMENT_CHANNELS.find(c => c.value === transaction.paymentChannel)?.label || 'N/A'}
                     </span>
                   </td>
-                  <td className="py-4 px-4 font-bold text-[#E4002B]">{formatCurrency(transaction.amount)}</td>
+                  <td className="py-4 px-4 font-bold text-[#E4002B] text-sm">{formatCurrency(transaction.amount)}</td>
                   <td className="py-4 px-4">
                     <span className={`px-3 py-1 rounded-full text-xs inline-flex items-center gap-1 ${
                       transaction.status === 'Paid' 
@@ -148,8 +150,50 @@ export function DailyTransactionsTable({ transactions, onExport }: DailyTransact
         </table>
       </div>
 
+      {/* Mobile Card View */}
+      <div className="lg:hidden space-y-3">
+        {filteredTransactions.length === 0 ? (
+          <div className="py-8 text-center text-gray-400 text-sm">
+            No transactions found. Try adjusting filters.
+          </div>
+        ) : (
+          filteredTransactions.map((transaction) => (
+            <div key={transaction.id} className="bg-gray-50 rounded-lg p-3 border border-gray-200">
+              <div className="flex items-start justify-between mb-2">
+                <div>
+                  <p className="font-bold text-[#E4002B] text-base">{formatCurrency(transaction.amount)}</p>
+                  <p className="text-xs text-gray-500">{transaction.orderNumber}</p>
+                </div>
+                <div className="flex flex-col items-end gap-1">
+                  <span className={`px-2 py-1 rounded-full text-xs inline-flex items-center gap-1 ${
+                    transaction.status === 'Paid' 
+                      ? 'bg-green-100 text-green-700' 
+                      : 'bg-orange-100 text-orange-700'
+                  }`}>
+                    <span className={`w-1.5 h-1.5 rounded-full ${
+                      transaction.status === 'Paid' ? 'bg-green-600' : 'bg-orange-600'
+                    }`}></span>
+                    {transaction.status}
+                  </span>
+                  <p className="text-xs text-gray-500">{transaction.time}</p>
+                </div>
+              </div>
+              <p className="text-sm text-gray-700 mb-2">{transaction.items}</p>
+              <div className="flex items-center gap-2">
+                <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium">
+                  {transaction.waiter}
+                </span>
+                <span className="px-2 py-1 bg-purple-100 text-purple-700 rounded text-xs font-medium">
+                  {PAYMENT_CHANNELS.find(c => c.value === transaction.paymentChannel)?.label || 'N/A'}
+                </span>
+              </div>
+            </div>
+          ))
+        )}
+      </div>
+
       {filteredTransactions.length > 0 && (
-        <div className="mt-4 pt-4 border-t flex justify-between items-center text-sm text-gray-600">
+        <div className="mt-4 pt-4 border-t flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 text-xs sm:text-sm text-gray-600">
           <p>Showing {filteredTransactions.length} of {transactions.length} transactions</p>
           <p>Total: <span className="font-bold text-[#E4002B]">{formatCurrency(filteredTransactions.reduce((sum, t) => sum + t.amount, 0))}</span></p>
         </div>
