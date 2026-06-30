@@ -38,3 +38,14 @@ next-env.d.ts
 
 # prisma
 /prisma/migrations
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS
+.DS_Store
+Thumbs.db
