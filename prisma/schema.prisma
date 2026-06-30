@@ -1,0 +1,124 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User roles for the system
+enum Role {
+  CASHIER
+  MANAGER
+  ADMIN
+}
+
+// Payment channels available
+enum PaymentChannel {
+  TELEBIRR
+  KUKU_CBE
+  SAMUEL_CBE
+  CASH
+}
+
+// Order status
+enum OrderStatus {
+  PAID
+  UNPAID
+  CANCELLED
+}
+
+// Menu categories
+enum Category {
+  CHICKEN
+  BURGERS
+  DRINKS
+  EXTRAS
+}
+
+// Shift types
+enum Shift {
+  MORNING
+  AFTERNOON
+  EVENING
+}
+
+// User model
+model User {
+  id        String   @id @default(cuid())
+  email     String   @unique
+  name      String
+  password  String
+  role      Role     @default(CASHIER)
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+  shifts ShiftReport[]
+}
+
+// Menu Item model
+model MenuItem {
+  id          String     @id @default(cuid())
+  name        String
+  price       Float
+  category    Category
+  description String?
+  imageUrl    String?
+  isAvailable Boolean    @default(true)
+  createdAt   DateTime   @default(now())
+  updatedAt   DateTime   @updatedAt
+
+  orderItems OrderItem[]
+}
+
+// Order model
+model Order {
+  id             String         @id @default(cuid())
+  orderNumber    String         @unique
+  subtotal       Float
+  vat            Float
+  total          Float
+  status         OrderStatus    @default(UNPAID)
+  paymentChannel PaymentChannel?
+  userId         String
+  shift          Shift
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
+
+  user       User        @relation(fields: [userId], references: [id])
+  orderItems OrderItem[]
+}
+
+// Order Item (junction table with quantity)
+model OrderItem {
+  id         String   @id @default(cuid())
+  quantity   Int
+  price      Float    // Snapshot price at time of order
+  orderId    String
+  menuItemId String
+  createdAt  DateTime @default(now())
+
+  order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+// Shift Report model
+model ShiftReport {
+  id            String   @id @default(cuid())
+  shift         Shift
+  totalRevenue  Float
+  totalOrders   Int
+  cashierName   String
+  userId        String
+  startTime     DateTime
+  endTime       DateTime?
+  createdAt     DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id])
+}
