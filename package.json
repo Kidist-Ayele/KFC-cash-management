@@ -31,6 +31,10 @@
     "eslint": "^9",
     "eslint-config-next": "16.2.9",
     "postcss": "^8.5.16",
+    "tsx": "^4.23.15",
     "typescript": "^5"
+  },
+  "prisma": {
+    "seed": "tsx prisma/seed.ts"
   }
 }

@@ -5,6 +5,8 @@ export type {
   Order,
   OrderItem,
   ShiftReport,
+  Expense,
+  ExpenseCategory,
   Role,
   PaymentChannel,
   OrderStatus,

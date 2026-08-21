@@ -48,6 +48,15 @@ enum Shift {
   EVENING
 }
 
+// Expense categories
+enum ExpenseCategory {
+  SUPPLIES
+  INGREDIENTS
+  UTILITIES
+  MAINTENANCE
+  OTHER
+}
+
 // User model
 model User {
   id        String   @id @default(cuid())
@@ -59,8 +68,9 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders Order[]
-  shifts ShiftReport[]
+  orders   Order[]
+  shifts   ShiftReport[]
+  expenses Expense[]
 }
 
 // Menu Item model
@@ -87,6 +97,7 @@ model Order {
   total          Float
   status         OrderStatus    @default(UNPAID)
   paymentChannel PaymentChannel?
+  waiter         String?
   userId         String
   shift          Shift
   createdAt      DateTime       @default(now())
@@ -107,6 +118,20 @@ model OrderItem {
 
   order    Order    @relation(fields: [orderId], references: [id], onDelete: Cascade)
   menuItem MenuItem @relation(fields: [menuItemId], references: [id])
+}
+
+// Expense model
+model Expense {
+  id          String          @id @default(cuid())
+  description String
+  amount      Float
+  category    ExpenseCategory @default(OTHER)
+  addedBy     String
+  userId      String?
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  user User? @relation(fields: [userId], references: [id])
 }
 
 // Shift Report model
