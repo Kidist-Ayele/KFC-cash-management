@@ -5,13 +5,15 @@ import { formatCurrency } from '@/lib/utils';
 import type { Category } from '@prisma/client';
 
 interface POSMenuProps {
+  items?: { id: string; name: string; price: number; category: Category }[];
   activeCategory: string;
   onCategoryChange: (category: string) => void;
   onAddItem: (item: { id: string; name: string; price: number; category: Category }) => void;
 }
 
-export function POSMenu({ activeCategory, onCategoryChange, onAddItem }: POSMenuProps) {
-  const filteredItems = INITIAL_MENU_ITEMS.filter(item => item.category === activeCategory);
+export function POSMenu({ items, activeCategory, onCategoryChange, onAddItem }: POSMenuProps) {
+  const menuSource = items && items.length > 0 ? items : INITIAL_MENU_ITEMS;
+  const filteredItems = menuSource.filter(item => item.category === activeCategory);
 
   return (
     <div className="mb-6">
