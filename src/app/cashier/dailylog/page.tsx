@@ -1,48 +1,63 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/shared/Header';
 import { DailySummaryCards } from '@/components/dailylog/DailySummaryCards';
 import { PaymentBreakdownChart } from '@/components/dailylog/PaymentBreakdownChart';
 import { WaiterPerformanceCard } from '@/components/dailylog/WaiterPerformanceCard';
 import { DailyTransactionsTable } from '@/components/dailylog/DailyTransactionsTable';
 
-// Mock data - will be replaced with real data from API
-const mockTransactions = [
-  {
-    id: '1',
-    time: '10:30 AM',
-    items: '2x 12 Piece Bucket, 1x 5pc Strips',
-    orderNumber: 'ORDER #9401',
-    amount: 3550,
-    status: 'Paid' as const,
-    waiter: 'Desalegn',
-    paymentChannel: 'TELEBIRR',
-  },
-  {
-    id: '2',
-    time: '11:15 AM',
-    items: '1x Bucket for 2, 2x Coca-Cola',
-    orderNumber: 'ORDER #9402',
-    amount: 1150,
-    status: 'Paid' as const,
-    waiter: 'Marta',
-    paymentChannel: 'CASH',
-  },
-  {
-    id: '3',
-    time: '12:00 PM',
-    items: '3x Zinger Burger, 1x Fries',
-    orderNumber: 'ORDER #9403',
-    amount: 950,
-    status: 'Unpaid' as const,
-    waiter: 'Desalegn',
-    paymentChannel: 'KUKU_CBE',
-  },
-];
+interface Transaction {
+  id: string;
+  time: string;
+  items: string;
+  orderNumber: string;
+  amount: number;
+  status: 'Paid' | 'Unpaid';
+  waiter: string;
+  paymentChannel?: string;
+}
 
 export default function DailyLogPage() {
-  const [transactions] = useState(mockTransactions);
+  const [transactions, setTransactions] = useState<Transaction[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+
+  const mapOrderToTransaction = (order: any): Transaction => {
+    const itemsList = order.orderItems && order.orderItems.length > 0
+      ? order.orderItems.map((oi: any) => `${oi.quantity}x ${oi.menuItem?.name || 'Item'}`).join(', ')
+      : 'Order';
+    const createdAt = new Date(order.createdAt);
+    const timeStr = createdAt.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+
+    return {
+      id: order.id,
+      time: timeStr,
+      items: itemsList,
+      orderNumber: order.orderNumber,
+      amount: order.total,
+      status: order.status === 'PAID' ? 'Paid' : 'Unpaid',
+      waiter: order.waiter || 'Desalegn',
+      paymentChannel: order.paymentChannel || undefined,
+    };
+  };
+
+  const fetchOrders = useCallback(async () => {
+    try {
+      const res = await fetch('/api/orders');
+      if (res.ok) {
+        const data = await res.json();
+        setTransactions(data.map(mapOrderToTransaction));
+      }
+    } catch (err) {
+      console.error('Failed to fetch daily orders:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchOrders();
+  }, [fetchOrders]);
 
   // Calculate summary stats
   const totalRevenue = transactions

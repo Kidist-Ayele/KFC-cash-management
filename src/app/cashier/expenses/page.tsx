@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/shared/Header';
 import { AddExpenseForm } from '@/components/expenses/AddExpenseForm';
 import { ExpensesDashboard } from '@/components/expenses/ExpensesDashboard';
@@ -22,34 +22,92 @@ export default function ExpensesPage() {
     category: 'Supplies',
   });
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const categories = ['Supplies', 'Ingredients', 'Utilities', 'Maintenance', 'Other'];
 
-  const handleAddExpense = () => {
-    if (newExpense.description && newExpense.amount > 0) {
-      const expense: Expense = {
-        id: Date.now().toString(),
-        date: new Date().toLocaleString('en-US', { 
-          month: 'short', 
-          day: 'numeric', 
-          year: 'numeric',
-          hour: '2-digit',
-          minute: '2-digit'
-        }),
-        description: newExpense.description,
-        amount: newExpense.amount,
-        category: newExpense.category,
-        addedBy: 'Abebe B.',
-      };
-      
-      setExpenses([expense, ...expenses]);
-      setNewExpense({ description: '', amount: 0, category: 'Supplies' });
+  const formatCategoryName = (cat: string) => {
+    return cat.charAt(0).toUpperCase() + cat.slice(1).toLowerCase();
+  };
+
+  const mapExpense = (dbExpense: any): Expense => {
+    const createdAt = new Date(dbExpense.createdAt);
+    return {
+      id: dbExpense.id,
+      date: createdAt.toLocaleString('en-US', { 
+        month: 'short', 
+        day: 'numeric', 
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }),
+      description: dbExpense.description,
+      amount: dbExpense.amount,
+      category: formatCategoryName(dbExpense.category),
+      addedBy: dbExpense.addedBy || 'Cashier',
+    };
+  };
+
+  const fetchExpenses = useCallback(async () => {
+    try {
+      const res = await fetch('/api/expenses');
+      if (res.ok) {
+        const data = await res.json();
+        setExpenses(data.map(mapExpense));
+      }
+    } catch (err) {
+      console.error('Failed to fetch expenses:', err);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchExpenses();
+  }, [fetchExpenses]);
+
+  const handleAddExpense = async () => {
+    if (newExpense.description && newExpense.amount > 0 && !isSubmitting) {
+      setIsSubmitting(true);
+      try {
+        const res = await fetch('/api/expenses', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            description: newExpense.description,
+            amount: newExpense.amount,
+            category: newExpense.category,
+            addedBy: 'Lishan B.',
+          }),
+        });
+
+        if (res.ok) {
+          const created = await res.json();
+          setExpenses(prev => [mapExpense(created), ...prev]);
+          setNewExpense({ description: '', amount: 0, category: 'Supplies' });
+        } else {
+          alert('Failed to save expense');
+        }
+      } catch (err) {
+        console.error('Error adding expense:', err);
+        alert('Error adding expense');
+      } finally {
+        setIsSubmitting(false);
+      }
     }
   };
 
-  const handleDeleteExpense = (id: string) => {
+  const handleDeleteExpense = async (id: string) => {
     if (confirm('Are you sure you want to delete this expense?')) {
-      setExpenses(expenses.filter(e => e.id !== id));
+      try {
+        const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
+        if (res.ok) {
+          setExpenses(prev => prev.filter(e => e.id !== id));
+        } else {
+          alert('Failed to delete expense from database');
+        }
+      } catch (err) {
+        console.error('Error deleting expense:', err);
+        alert('Error deleting expense');
+      }
     }
   };
 

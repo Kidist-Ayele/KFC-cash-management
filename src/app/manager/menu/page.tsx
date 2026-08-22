@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/shared/Header';
 import { MenuItemCard } from '@/components/manager/MenuItemCard';
 import { AddMenuItemModal } from '@/components/manager/AddMenuItemModal';
@@ -12,34 +12,89 @@ export default function MenuManagementPage() {
   );
   const [showAddModal, setShowAddModal] = useState(false);
   const [categoryFilter, setCategoryFilter] = useState('All');
+  const [isLoading, setIsLoading] = useState(true);
 
   const categories = ['All', 'CHICKEN', 'BURGERS', 'DRINKS', 'EXTRAS'];
+
+  const fetchMenu = useCallback(async () => {
+    try {
+      const res = await fetch('/api/menu?all=true');
+      if (res.ok) {
+        const data = await res.json();
+        if (data.length > 0) {
+          setMenuItems(data);
+        }
+      }
+    } catch (err) {
+      console.error('Failed to load menu items:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchMenu();
+  }, [fetchMenu]);
 
   const filteredItems = categoryFilter === 'All' 
     ? menuItems 
     : menuItems.filter(item => item.category === categoryFilter);
 
-  const handleToggleAvailability = (id: string) => {
+  const handleToggleAvailability = async (id: string) => {
+    const currentItem = menuItems.find(i => i.id === id);
+    if (!currentItem) return;
+    const newStatus = !currentItem.isAvailable;
+
+    // Optimistic UI update
     setMenuItems(items => 
       items.map(item => 
-        item.id === id ? { ...item, isAvailable: !item.isAvailable } : item
+        item.id === id ? { ...item, isAvailable: newStatus } : item
       )
     );
+
+    try {
+      const res = await fetch(`/api/menu/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ isAvailable: newStatus }),
+      });
+      if (!res.ok) {
+        // Revert on error
+        setMenuItems(items => 
+          items.map(item => 
+            item.id === id ? { ...item, isAvailable: !newStatus } : item
+          )
+        );
+      }
+    } catch (err) {
+      console.error('Failed to update availability:', err);
+    }
   };
 
   const handleEdit = (id: string) => {
     alert(`Edit item ${id} - Feature coming soon`);
   };
 
-  const handleAddItem = (newItem: any) => {
-    const item = {
-      ...newItem,
-      id: `item-${Date.now()}`,
-      isAvailable: true,
-    };
-    setMenuItems([...menuItems, item]);
-    setShowAddModal(false);
-    alert('Menu item added successfully!');
+  const handleAddItem = async (newItem: any) => {
+    try {
+      const res = await fetch('/api/menu', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newItem),
+      });
+
+      if (res.ok) {
+        const created = await res.json();
+        setMenuItems(prev => [...prev, created]);
+        setShowAddModal(false);
+      } else {
+        const err = await res.json();
+        alert(err.error || 'Failed to add item');
+      }
+    } catch (err) {
+      console.error('Error adding item:', err);
+      alert('Error adding menu item');
+    }
   };
 
   return (
