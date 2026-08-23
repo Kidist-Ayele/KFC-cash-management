@@ -1,12 +1,13 @@
 import { PrismaClient } from '@prisma/client';
+import { INITIAL_MENU_ITEMS } from '../src/constants/menu';
 
 const prisma = new PrismaClient();
 
 async function main() {
   console.log('🌱 Seeding database...');
 
-  // Create or update users
-  const cashier = await prisma.user.upsert({
+  // Create default users
+  await prisma.user.upsert({
     where: { email: 'cashier@kfc.com' },
     update: {},
     create: {
@@ -17,7 +18,7 @@ async function main() {
     },
   });
 
-  const manager = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'manager@kfc.com' },
     update: {},
     create: {
@@ -28,7 +29,7 @@ async function main() {
     },
   });
 
-  const admin = await prisma.user.upsert({
+  await prisma.user.upsert({
     where: { email: 'admin@kfc.com' },
     update: {},
     create: {
@@ -39,31 +40,34 @@ async function main() {
     },
   });
 
-  console.log('✅ Users verified/created');
+  console.log('✅ Users verified');
 
-  // Check if menu items exist
-  const existingMenuCount = await prisma.menuItem.count();
-  if (existingMenuCount === 0) {
-    await prisma.menuItem.createMany({
-      data: [
-        { name: 'Zinger Burger', price: 450, category: 'BURGERS', description: 'Spicy chicken burger' },
-        { name: 'Chicken Pieces (4pc)', price: 380, category: 'CHICKEN', description: '4 pieces of fried chicken' },
-        { name: 'Chicken Pieces (6pc)', price: 550, category: 'CHICKEN', description: '6 pieces of fried chicken' },
-        { name: 'Colonel Burger', price: 400, category: 'BURGERS', description: 'Classic chicken burger' },
-        { name: 'Twister Wrap', price: 420, category: 'BURGERS', description: 'Chicken wrap' },
-        { name: 'Coca Cola', price: 50, category: 'DRINKS', description: '330ml bottle' },
-        { name: 'Sprite', price: 50, category: 'DRINKS', description: '330ml bottle' },
-        { name: 'Fanta', price: 50, category: 'DRINKS', description: '330ml bottle' },
-        { name: 'French Fries', price: 80, category: 'EXTRAS', description: 'Crispy fries' },
-        { name: 'Coleslaw', price: 70, category: 'EXTRAS', description: 'Fresh coleslaw' },
-      ],
+  // Seed Waiters
+  const waiters = ['Desalegn', 'Marta', 'Serkalem', 'Abebe'];
+  for (const name of waiters) {
+    await prisma.waiter.upsert({
+      where: { name },
+      update: { isActive: true },
+      create: { name, isActive: true },
     });
-    console.log('✅ Menu items created');
-  } else {
-    console.log(`✅ Menu items already exist (${existingMenuCount} items)`);
+  }
+  console.log('✅ Waiters created/verified');
+
+  // Insert all menu items from kuku-kfc.vercel.app
+  console.log(`📦 Seeding ${INITIAL_MENU_ITEMS.length} menu items from digital menu...`);
+  for (const item of INITIAL_MENU_ITEMS) {
+    await prisma.menuItem.create({
+      data: {
+        name: item.name,
+        price: item.price,
+        category: item.category,
+        description: item.description || null,
+        isAvailable: true,
+      },
+    });
   }
 
-  console.log('🎉 Seeding complete!');
+  console.log('🎉 Seeding complete with live KUKU digital menu!');
 }
 
 main()

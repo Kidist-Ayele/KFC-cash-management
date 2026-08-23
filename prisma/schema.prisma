@@ -33,10 +33,14 @@ enum OrderStatus {
   CANCELLED
 }
 
-// Menu categories
+// Menu categories matching live digital menu
 enum Category {
-  CHICKEN
-  BURGERS
+  SHAWARMA
+  ROASTED
+  CRISPY
+  BURGER
+  FISH
+  PIZZA
   DRINKS
   EXTRAS
 }
@@ -68,9 +72,57 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  orders   Order[]
-  shifts   ShiftReport[]
-  expenses Expense[]
+  orders         Order[]
+  shifts         ShiftReport[]
+  expenses       Expense[]
+  cashierShifts  CashierShift[]
+}
+
+// Waiter model
+model Waiter {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  phone     String?
+  isActive  Boolean  @default(true)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders     Order[]
+  pettyCash  WaiterPettyCash[]
+}
+
+// Waiter Petty Cash (Floats given to waiters during shift)
+model WaiterPettyCash {
+  id          String   @id @default(cuid())
+  waiterId    String
+  amount      Float
+  givenBy     String   // Cashier name
+  notes       String?
+  createdAt   DateTime @default(now())
+
+  waiter Waiter @relation(fields: [waiterId], references: [id], onDelete: Cascade)
+}
+
+// Cashier Shift (Beginning cash, shift management, and cash drawer closing reconciliation)
+model CashierShift {
+  id             String    @id @default(cuid())
+  cashierId      String
+  cashierName    String
+  shiftType      Shift     @default(MORNING)
+  beginningCash  Float     @default(0) // Starting drawer float
+  closingCash    Float?    // Actual physical cash counted at end of shift
+  expectedCash   Float?    // beginningCash + cashFromSales - totalExpenses - tipsPaidOut
+  cashDifference Float?    // closingCash - expectedCash (Over / Short)
+  totalCashSales Float     @default(0)
+  totalTransfer  Float     @default(0)
+  totalExpenses  Float     @default(0)
+  totalTipsGiven Float     @default(0)
+  notes          String?
+  status         String    @default("ACTIVE") // ACTIVE or CLOSED
+  startedAt      DateTime  @default(now())
+  closedAt       DateTime?
+
+  user User @relation(fields: [cashierId], references: [id])
 }
 
 // Menu Item model
@@ -95,15 +147,19 @@ model Order {
   subtotal       Float
   vat            Float
   total          Float
+  amountPaid     Float?         // Actual amount received/transferred by customer
+  tip            Float          @default(0) // Extra amount = max(0, amountPaid - total)
   status         OrderStatus    @default(UNPAID)
   paymentChannel PaymentChannel?
   waiter         String?
+  waiterId       String?
   userId         String
   shift          Shift
   createdAt      DateTime       @default(now())
   updatedAt      DateTime       @updatedAt
 
   user       User        @relation(fields: [userId], references: [id])
+  waiterRel  Waiter?     @relation(fields: [waiterId], references: [id])
   orderItems OrderItem[]
 }
 
