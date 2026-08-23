@@ -6,13 +6,13 @@ import { Shift, OrderStatus, PaymentChannel } from '@prisma/client';
 export async function POST(request: Request) {
   try {
     const body = await request.json();
-    const { items, subtotal, vat, total, paymentChannel, userId, waiter } = body;
+    const { items, subtotal, vat, total, amountPaid, paymentChannel, userId, waiter, waiterId } = body;
 
-    // Generate unique order number (e.g., ORDER#1024 or based on count/timestamp)
+    // Generate unique order number
     const todayCount = await prisma.order.count();
     const orderNumber = `ORDER #${9400 + todayCount + 1}`;
 
-    // Ensure we have a valid userId (fallback to first cashier or any user in DB)
+    // Ensure we have a valid userId
     let assignedUserId = userId;
     if (!assignedUserId) {
       const defaultUser = await prisma.user.findFirst({
@@ -28,21 +28,40 @@ export async function POST(request: Request) {
       );
     }
 
+    // Resolve waiter ID if waiter name provided
+    let resolvedWaiterId = waiterId;
+    let waiterName = waiter || 'Desalegn';
+    if (!resolvedWaiterId && waiterName) {
+      const foundWaiter = await prisma.waiter.findUnique({
+        where: { name: waiterName },
+      });
+      if (foundWaiter) {
+        resolvedWaiterId = foundWaiter.id;
+      }
+    }
+
+    const billTotal = Number(total);
+    const receivedAmount = amountPaid !== undefined && amountPaid !== null ? Number(amountPaid) : billTotal;
+    const tip = Math.max(0, receivedAmount - billTotal);
+
     // Create order with items in PostgreSQL
     const order = await prisma.order.create({
       data: {
         orderNumber,
         subtotal: Number(subtotal),
         vat: Number(vat),
-        total: Number(total),
+        total: billTotal,
+        amountPaid: receivedAmount,
+        tip,
         status: OrderStatus.PAID,
         paymentChannel: paymentChannel as PaymentChannel,
-        waiter: waiter || 'Desalegn',
+        waiter: waiterName,
+        waiterId: resolvedWaiterId || null,
         userId: assignedUserId,
         shift: getCurrentShift() as Shift,
         orderItems: {
           create: items.map((item: any) => ({
-            menuItemId: item.menuItem?.id || item.id,
+            menuItemId: item.menuItemId || item.menuItem?.id || item.id,
             quantity: Number(item.quantity) || 1,
             price: Number(item.menuItem?.price || item.price),
           })),

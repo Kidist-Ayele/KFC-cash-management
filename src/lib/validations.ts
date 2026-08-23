@@ -17,7 +17,16 @@ export const CreateOrderSchema = z.object({
 export const MenuItemSchema = z.object({
   name: z.string().min(1, 'Name is required'),
   price: z.number().positive('Price must be positive'),
-  category: z.enum(['CHICKEN', 'BURGERS', 'DRINKS', 'EXTRAS']),
+  category: z.enum([
+    'SHAWARMA',
+    'ROASTED',
+    'CRISPY',
+    'BURGER',
+    'FISH',
+    'PIZZA',
+    'DRINKS',
+    'EXTRAS',
+  ]),
   description: z.string().optional(),
   imageUrl: z.string().url().optional(),
   isAvailable: z.boolean().default(true),
