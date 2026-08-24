@@ -8,6 +8,8 @@ interface Transaction {
   items: string;
   orderNumber: string;
   amount: number;
+  amountPaid?: number;
+  tip?: number;
   status: 'Paid' | 'Unpaid';
   waiter: string;
   paymentChannel?: string;
@@ -16,6 +18,7 @@ interface Transaction {
 interface EditTransactionModalProps {
   isOpen: boolean;
   transaction: Transaction | null;
+  waitersList?: string[];
   onClose: () => void;
   onSave: () => void;
   onTransactionChange: (field: string, value: any) => void;
@@ -24,6 +27,7 @@ interface EditTransactionModalProps {
 export function EditTransactionModal({
   isOpen,
   transaction,
+  waitersList = ['Desalegn', 'Marta', 'Serkalem'],
   onClose,
   onSave,
   onTransactionChange,
@@ -56,8 +60,11 @@ export function EditTransactionModal({
               onChange={(e) => onTransactionChange('waiter', e.target.value)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
             >
-              <option value="Desalegn">Desalegn</option>
-              <option value="Marta">Marta</option>
+              {waitersList.map((w) => (
+                <option key={w} value={w}>
+                  {w}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -81,6 +88,17 @@ export function EditTransactionModal({
               step="0.01"
               value={transaction.amount}
               onChange={(e) => onTransactionChange('amount', parseFloat(e.target.value))}
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
+            />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">Tip for Waiter (ETB)</label>
+            <input
+              type="number"
+              step="1"
+              value={transaction.tip || 0}
+              onChange={(e) => onTransactionChange('tip', parseFloat(e.target.value) || 0)}
               className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
             />
           </div>

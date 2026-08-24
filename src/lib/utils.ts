@@ -9,13 +9,19 @@ export function formatCurrency(amount: number): string {
   return `ETB ${amount.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
 
+// Prices are VAT inclusive (15% included)
+export function calculateVATInclusive(total: number, rate: number = 0.15): { subtotal: number; vat: number; total: number } {
+  const vat = Math.round((total * rate / (1 + rate)) * 100) / 100;
+  const subtotal = Math.round((total - vat) * 100) / 100;
+  return { subtotal, vat, total };
+}
+
 export function calculateVAT(amount: number, rate: number = 0.15): number {
-  return amount * rate;
+  return Math.round((amount * rate / (1 + rate)) * 100) / 100;
 }
 
 export function calculateTotal(subtotal: number, vatRate: number = 0.15): number {
-  const vat = calculateVAT(subtotal, vatRate);
-  return subtotal + vat;
+  return subtotal;
 }
 
 export function getCurrentShift(): 'MORNING' | 'AFTERNOON' | 'EVENING' {

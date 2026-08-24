@@ -1,6 +1,7 @@
 'use client';
 
 import { formatCurrency } from '@/lib/utils';
+import { CategoryIcon } from '@/components/shared/CategoryIcon';
 
 interface MenuItemCardProps {
   item: {
@@ -16,27 +17,31 @@ interface MenuItemCardProps {
 
 export function MenuItemCard({ item, onEdit, onToggleAvailability }: MenuItemCardProps) {
   return (
-    <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-lg transition-shadow">
-      <div className="flex items-start justify-between mb-3">
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 mb-1">{item.name}</h3>
-          <p className="text-sm text-gray-500">{item.category}</p>
+    <div className="bg-white rounded-xl border border-gray-200 p-3.5 hover:shadow-md transition-shadow flex flex-col justify-between">
+      <div>
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <div className="w-8 h-8 rounded-lg bg-gray-100 text-gray-700 flex items-center justify-center">
+            <CategoryIcon category={item.category} className="w-4 h-4" />
+          </div>
+          <span
+            className={`px-2 py-0.5 rounded-full text-[10px] font-semibold ${
+              item.isAvailable ? 'bg-emerald-50 text-emerald-700' : 'bg-red-50 text-red-700'
+            }`}
+          >
+            {item.isAvailable ? 'Available' : 'Unavailable'}
+          </span>
         </div>
-        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-          item.isAvailable 
-            ? 'bg-green-100 text-green-700' 
-            : 'bg-red-100 text-red-700'
-        }`}>
-          {item.isAvailable ? 'Available' : 'Unavailable'}
-        </span>
+
+        <h3 className="font-bold text-gray-900 text-xs sm:text-sm line-clamp-1 mb-0.5">{item.name}</h3>
+        <p className="text-[11px] text-gray-400 uppercase font-medium">{item.category}</p>
       </div>
 
-      <div className="flex items-center justify-between">
-        <p className="text-lg font-bold text-[#E4002B]">{formatCurrency(item.price)}</p>
-        <div className="flex gap-2">
+      <div className="flex items-center justify-between pt-3 border-t border-gray-100 mt-3">
+        <p className="text-sm font-black text-[#E4002B]">{formatCurrency(item.price)}</p>
+        <div className="flex items-center gap-1">
           <button
             onClick={() => onToggleAvailability(item.id)}
-            className="p-2 text-gray-600 hover:bg-gray-100 rounded"
+            className="p-1.5 text-gray-500 hover:bg-gray-100 rounded-md transition-colors"
             title="Toggle availability"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -46,7 +51,7 @@ export function MenuItemCard({ item, onEdit, onToggleAvailability }: MenuItemCar
           </button>
           <button
             onClick={() => onEdit(item.id)}
-            className="p-2 text-blue-600 hover:bg-blue-50 rounded"
+            className="p-1.5 text-blue-600 hover:bg-blue-50 rounded-md transition-colors"
             title="Edit item"
           >
             <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

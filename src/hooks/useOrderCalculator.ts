@@ -7,13 +7,14 @@ import { VAT_RATE } from '@/constants/payment';
 
 export function useOrderCalculator(items: CartItem[]) {
   const calculations = useMemo(() => {
-    const subtotal = items.reduce(
+    const total = items.reduce(
       (sum, item) => sum + item.menuItem.price * item.quantity,
       0
     );
     
-    const vat = calculateVAT(subtotal, VAT_RATE);
-    const total = calculateTotal(subtotal, VAT_RATE);
+    // Prices are VAT inclusive (15% included)
+    const vat = Math.round((total * 15 / 115) * 100) / 100;
+    const subtotal = Math.round((total - vat) * 100) / 100;
     const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
     
     const itemBreakdown = items.map((item) => ({

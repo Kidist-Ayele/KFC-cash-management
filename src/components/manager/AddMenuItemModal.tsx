@@ -48,10 +48,14 @@ export function AddMenuItemModal({ isOpen, onClose, onSave }: AddMenuItemModalPr
               required
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B]"
             >
-              <option value="CHICKEN">Chicken</option>
-              <option value="BURGERS">Burgers</option>
-              <option value="DRINKS">Drinks</option>
-              <option value="EXTRAS">Extras</option>
+              <option value="SHAWARMA">Shawarma</option>
+              <option value="ROASTED">Roasted</option>
+              <option value="CRISPY">Crispy</option>
+              <option value="BURGER">Burger</option>
+              <option value="FISH">Fish</option>
+              <option value="PIZZA">Pizza</option>
+              <option value="DRINKS">Drinks & Juices</option>
+              <option value="EXTRAS">Extras & Packaging</option>
             </select>
           </div>
 

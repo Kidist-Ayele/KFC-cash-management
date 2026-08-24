@@ -64,12 +64,13 @@ export const useOrderStore = create<OrderState>((set, get) => ({
 
   getOrderSummary: () => {
     const items = get().items;
-    const subtotal = items.reduce(
+    const total = items.reduce(
       (sum, item) => sum + item.menuItem.price * item.quantity,
       0
     );
-    const vat = calculateVAT(subtotal, VAT_RATE);
-    const total = calculateTotal(subtotal, VAT_RATE);
+    // Menu prices already include 15% VAT (VAT Inclusive: Tax = Total * 15 / 115)
+    const vat = Math.round((total * 15 / 115) * 100) / 100;
+    const subtotal = Math.round((total - vat) * 100) / 100;
     const itemCount = items.reduce((sum, item) => sum + item.quantity, 0);
 
     return { subtotal, vat, total, itemCount };

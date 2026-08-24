@@ -2,8 +2,6 @@
 
 import { formatCurrency } from '@/lib/utils';
 
-const WAITERS = ['Desalegn', 'Marta'];
-
 interface OrderItem {
   menuItem: {
     id: string;
@@ -14,10 +12,17 @@ interface OrderItem {
   quantity: number;
 }
 
+interface WaiterOption {
+  id: string;
+  name: string;
+}
+
 interface LiveOrderPanelProps {
   items: OrderItem[];
+  waiters: WaiterOption[];
   selectedWaiter: string;
   onWaiterChange: (waiter: string) => void;
+  onOpenAddWaiter: () => void;
   onUpdateQuantity: (id: string, quantity: number) => void;
   onClearCart: () => void;
   onFinalizeOrder: () => void;
@@ -30,8 +35,10 @@ interface LiveOrderPanelProps {
 
 export function LiveOrderPanel({
   items,
+  waiters,
   selectedWaiter,
   onWaiterChange,
+  onOpenAddWaiter,
   onUpdateQuantity,
   onClearCart,
   onFinalizeOrder,
@@ -45,16 +52,27 @@ export function LiveOrderPanel({
           <button onClick={onClearCart} className="text-[#E4002B] font-medium hover:underline text-sm sm:text-base">Clear</button>
         </div>
         
-        {/* Waiter Selection */}
+        {/* Waiter Selection with + Add Button */}
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-2">Waiter</label>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm font-medium text-gray-700">Waiter</label>
+            <button
+              type="button"
+              onClick={onOpenAddWaiter}
+              className="text-xs font-semibold text-[#E4002B] hover:underline flex items-center gap-1"
+            >
+              + Add Waiter
+            </button>
+          </div>
           <select 
             value={selectedWaiter}
             onChange={(e) => onWaiterChange(e.target.value)}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B] text-sm sm:text-base"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#E4002B] text-sm sm:text-base bg-white"
           >
-            {WAITERS.map(waiter => (
-              <option key={waiter} value={waiter}>{waiter}</option>
+            {waiters.map((waiter) => (
+              <option key={waiter.id} value={waiter.name}>
+                {waiter.name}
+              </option>
             ))}
           </select>
         </div>
@@ -96,15 +114,15 @@ export function LiveOrderPanel({
         <div className="p-4 sm:p-6 border-t border-gray-200 space-y-3 sm:space-y-4">
           <div className="space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-gray-600">Subtotal</span>
+              <span className="text-gray-600">Subtotal (Net)</span>
               <span className="font-medium">{formatCurrency(summary.subtotal)}</span>
             </div>
             <div className="flex justify-between">
-              <span className="text-gray-600">VAT (15%)</span>
-              <span className="font-medium">{formatCurrency(summary.vat)}</span>
+              <span className="text-gray-600">VAT Included (15%)</span>
+              <span className="font-medium text-gray-500">{formatCurrency(summary.vat)}</span>
             </div>
             <div className="flex justify-between text-base sm:text-lg font-bold pt-2 border-t">
-              <span>Total</span>
+              <span>Total Payable</span>
               <span className="text-[#E4002B]">{formatCurrency(summary.total)}</span>
             </div>
           </div>

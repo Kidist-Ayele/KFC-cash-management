@@ -14,7 +14,17 @@ export default function MenuManagementPage() {
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [isLoading, setIsLoading] = useState(true);
 
-  const categories = ['All', 'CHICKEN', 'BURGERS', 'DRINKS', 'EXTRAS'];
+  const categories = [
+    'All',
+    'SHAWARMA',
+    'ROASTED',
+    'CRISPY',
+    'BURGER',
+    'FISH',
+    'PIZZA',
+    'DRINKS',
+    'EXTRAS',
+  ];
 
   const fetchMenu = useCallback(async () => {
     try {
