@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/shared/Header';
 import { AddExpenseForm } from '@/components/expenses/AddExpenseForm';
 import { ExpensesDashboard } from '@/components/expenses/ExpensesDashboard';
+import { ConfirmModal } from '@/components/shared/ConfirmModal';
 
 interface Expense {
   id: string;
@@ -23,6 +24,8 @@ export default function ExpensesPage() {
   });
   const [categoryFilter, setCategoryFilter] = useState('All');
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingExpenseId, setDeletingExpenseId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const categories = ['Supplies', 'Ingredients', 'Utilities', 'Maintenance', 'Other'];
 
@@ -95,19 +98,23 @@ export default function ExpensesPage() {
     }
   };
 
-  const handleDeleteExpense = async (id: string) => {
-    if (confirm('Are you sure you want to delete this expense?')) {
-      try {
-        const res = await fetch(`/api/expenses/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          setExpenses(prev => prev.filter(e => e.id !== id));
-        } else {
-          alert('Failed to delete expense from database');
-        }
-      } catch (err) {
-        console.error('Error deleting expense:', err);
-        alert('Error deleting expense');
+  const handleDeleteExpense = (id: string) => {
+    setDeletingExpenseId(id);
+  };
+
+  const handleConfirmDeleteExpense = async () => {
+    if (!deletingExpenseId) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/expenses/${deletingExpenseId}`, { method: 'DELETE' });
+      if (res.ok) {
+        setExpenses((prev) => prev.filter((e) => e.id !== deletingExpenseId));
       }
+    } catch (err) {
+      console.error('Error deleting expense:', err);
+    } finally {
+      setIsDeleting(false);
+      setDeletingExpenseId(null);
     }
   };
 
@@ -137,6 +144,18 @@ export default function ExpensesPage() {
           />
         </div>
       </div>
+
+      <ConfirmModal
+        isOpen={Boolean(deletingExpenseId)}
+        onClose={() => setDeletingExpenseId(null)}
+        onConfirm={handleConfirmDeleteExpense}
+        isLoading={isDeleting}
+        title="Delete Expense"
+        message="Are you sure you want to remove this expense record? This will adjust the daily net cash drawer calculations."
+        confirmLabel="Yes, Delete"
+        cancelLabel="Cancel"
+        isDestructive={true}
+      />
     </>
   );
 }

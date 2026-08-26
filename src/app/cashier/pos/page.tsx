@@ -10,6 +10,7 @@ import { TransactionsTable } from '@/components/cashier/TransactionsTable';
 import { PaymentModal } from '@/components/cashier/PaymentModal';
 import { EditTransactionModal } from '@/components/cashier/EditTransactionModal';
 import { AddWaiterModal } from '@/components/cashier/AddWaiterModal';
+import { ConfirmModal } from '@/components/shared/ConfirmModal';
 
 type PaymentChannelType = 'TELEBIRR' | 'KUKU_CBE' | 'SAMUEL_CBE' | 'CASH';
 
@@ -26,6 +27,8 @@ export default function POSPage() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showAddWaiterModal, setShowAddWaiterModal] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [deletingOrderId, setDeletingOrderId] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   // Cart & Order store
   const { items, addItem, updateQuantity, clearCart, getOrderSummary } = useOrderStore();
@@ -117,18 +120,25 @@ export default function POSPage() {
   };
 
   // Handle Delete Transaction
-  const handleDeleteTransaction = async (id: string) => {
-    if (confirm('Are you sure you want to delete this transaction?')) {
-      try {
-        const res = await fetch(`/api/orders/${id}`, { method: 'DELETE' });
-        if (res.ok) {
-          removeTransaction(id);
-        } else {
-          alert('Failed to delete transaction from database');
-        }
-      } catch (err) {
-        alert('Error deleting transaction');
+  const handleDeleteTransaction = (id: string) => {
+    setDeletingOrderId(id);
+  };
+
+  const handleConfirmDeleteOrder = async () => {
+    if (!deletingOrderId) return;
+    setIsDeleting(true);
+    try {
+      const res = await fetch(`/api/orders/${deletingOrderId}`, { method: 'DELETE' });
+      if (res.ok) {
+        removeTransaction(deletingOrderId);
+      } else {
+        alert('Failed to delete transaction from database');
       }
+    } catch (err) {
+      alert('Error deleting transaction');
+    } finally {
+      setIsDeleting(false);
+      setDeletingOrderId(null);
     }
   };
 
@@ -208,6 +218,19 @@ export default function POSPage() {
           addWaiter(newWaiter);
           setSelectedWaiter(newWaiter.name);
         }}
+      />
+
+      {/* Delete Confirmation Modal */}
+      <ConfirmModal
+        isOpen={Boolean(deletingOrderId)}
+        onClose={() => setDeletingOrderId(null)}
+        onConfirm={handleConfirmDeleteOrder}
+        isLoading={isDeleting}
+        title="Delete Transaction"
+        message="Are you sure you want to cancel and remove this completed transaction? This will adjust the daily sales total."
+        confirmLabel="Yes, Delete"
+        cancelLabel="Cancel"
+        isDestructive={true}
       />
     </>
   );

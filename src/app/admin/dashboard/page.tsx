@@ -1,112 +1,204 @@
 'use client';
 
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/shared/Header';
-import { CompanyOverviewCards } from '@/components/admin/CompanyOverviewCards';
-import { BranchPerformanceTable } from '@/components/admin/BranchPerformanceTable';
-import { RevenueComparisonChart } from '@/components/admin/RevenueComparisonChart';
+import { ExecutiveMetricsCards } from '@/components/admin/ExecutiveMetricsCards';
+import { ExecutivePaymentChannels } from '@/components/admin/ExecutivePaymentChannels';
+import { CategorySalesChart } from '@/components/admin/CategorySalesChart';
+import { CashierShiftAuditCard } from '@/components/admin/CashierShiftAuditCard';
+import { RecentOrdersLedger } from '@/components/admin/RecentOrdersLedger';
+import Link from 'next/link';
 
 export default function AdminDashboardPage() {
-  // Mock data - will be from API
-  const overviewData = {
-    totalRevenue: 458920,
-    totalBranches: 3,
-    totalUsers: 24,
-    totalOrders: 1247,
+  const [period, setPeriod] = useState<'today' | 'week' | 'month' | 'all'>('today');
+  const [data, setData] = useState<any>(null);
+  const [isLoading, setIsLoading] = useState(true);
+  const [telegramStatus, setTelegramStatus] = useState<string | null>(null);
+  const [isSendingTelegram, setIsSendingTelegram] = useState(false);
+
+  const fetchDashboardData = useCallback(async (selectedPeriod: string) => {
+    setIsLoading(true);
+    try {
+      const res = await fetch(`/api/admin/dashboard?period=${selectedPeriod}`);
+      if (res.ok) {
+        const json = await res.json();
+        setData(json);
+      }
+    } catch (err) {
+      console.error('Failed to load dashboard metrics:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchDashboardData(period);
+  }, [period, fetchDashboardData]);
+
+  // Quick Action: Send Telegram Report from Executive Dashboard
+  const handleQuickTelegramReport = async () => {
+    setIsSendingTelegram(true);
+    setTelegramStatus(null);
+    try {
+      const reportRes = await fetch('/api/reports/daily');
+      if (!reportRes.ok) throw new Error('Failed to generate report');
+      const reportJson = await reportRes.json();
+
+      const sendRes = await fetch('/api/reports/send-telegram', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: reportJson.message }),
+      });
+
+      const sendJson = await sendRes.json();
+      if (sendRes.ok && sendJson.success) {
+        setTelegramStatus('Report sent to Telegram!');
+        setTimeout(() => setTelegramStatus(null), 3500);
+      } else {
+        alert(sendJson.error || 'Failed to dispatch to Telegram');
+      }
+    } catch (e: any) {
+      alert(e.message || 'Error sending Telegram report');
+    } finally {
+      setIsSendingTelegram(false);
+    }
   };
 
-  const branchData = [
-    {
-      id: '1',
-      name: 'Main Branch',
-      location: 'Bole, Addis Ababa',
-      manager: 'Manager M.',
-      revenue: 185340,
-      orders: 542,
-      staff: 8,
-      status: 'ACTIVE',
-    },
-    {
-      id: '2',
-      name: 'Airport Branch',
-      location: 'Airport Road',
-      manager: 'Sara T.',
-      revenue: 158720,
-      orders: 438,
-      staff: 6,
-      status: 'ACTIVE',
-    },
-    {
-      id: '3',
-      name: 'Mexico Branch',
-      location: 'Mexico Square',
-      manager: 'John D.',
-      revenue: 114860,
-      orders: 267,
-      staff: 5,
-      status: 'ACTIVE',
-    },
-  ];
-
-  const revenueComparison = [
-    { branch: 'Main Branch', revenue: 185340, percentage: 40.4 },
-    { branch: 'Airport Branch', revenue: 158720, percentage: 34.6 },
-    { branch: 'Mexico Branch', revenue: 114860, percentage: 25.0 },
-  ];
-
   return (
-    <>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header role="admin" />
+    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+      <Header role="admin" />
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="mb-6">
-            <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Company Overview</h1>
-            <p className="text-sm text-gray-600 mt-1">Monitor all branches and system-wide performance</p>
-          </div>
-
-          <CompanyOverviewCards {...overviewData} />
-
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6 mb-6">
-            <RevenueComparisonChart data={revenueComparison} />
-            
-            <div className="bg-white rounded-xl p-4 sm:p-6 border border-gray-200">
-              <h3 className="text-lg font-bold mb-4">Quick Actions</h3>
-              <div className="grid grid-cols-2 gap-3">
-                <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-purple-500 hover:bg-purple-50 transition-all text-left">
-                  <svg className="w-8 h-8 text-purple-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                  </svg>
-                  <p className="font-semibold text-sm">Add Branch</p>
-                </button>
-
-                <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-all text-left">
-                  <svg className="w-8 h-8 text-blue-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                  </svg>
-                  <p className="font-semibold text-sm">Add User</p>
-                </button>
-
-                <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-green-500 hover:bg-green-50 transition-all text-left">
-                  <svg className="w-8 h-8 text-green-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                  </svg>
-                  <p className="font-semibold text-sm">Generate Report</p>
-                </button>
-
-                <button className="p-4 border-2 border-gray-200 rounded-lg hover:border-orange-500 hover:bg-orange-50 transition-all text-left">
-                  <svg className="w-8 h-8 text-orange-600 mb-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  </svg>
-                  <p className="font-semibold text-sm">Settings</p>
-                </button>
-              </div>
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        {/* Top Header & Timeframe Ribbon */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-gray-200">
+          <div>
+            <div className="flex items-center gap-2">
+              <span className="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse" />
+              <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+                Executive Command Center
+              </h1>
             </div>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Live financial oversight, cashier drawers, and operational performance
+            </p>
           </div>
 
-          <BranchPerformanceTable branches={branchData} />
+          <div className="flex flex-wrap items-center gap-2">
+            {/* Timeframe Filter Tabs */}
+            <div className="flex bg-gray-100 p-1 rounded-lg border border-gray-200 text-xs font-semibold">
+              {(['today', 'week', 'month', 'all'] as const).map((tab) => (
+                <button
+                  key={tab}
+                  onClick={() => setPeriod(tab)}
+                  className={`px-3 py-1.5 rounded-md transition-all ${
+                    period === tab
+                      ? 'bg-white text-gray-900 shadow-xs'
+                      : 'text-gray-600 hover:text-gray-900'
+                  }`}
+                >
+                  {tab === 'today'
+                    ? 'Today'
+                    : tab === 'week'
+                    ? 'This Week'
+                    : tab === 'month'
+                    ? 'This Month'
+                    : 'All Time'}
+                </button>
+              ))}
+            </div>
+
+            {/* Telegram Dispatch Button */}
+            <button
+              onClick={handleQuickTelegramReport}
+              disabled={isSendingTelegram}
+              className="px-3.5 py-2 bg-[#229ED9] hover:bg-[#1E88E5] text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center gap-1.5 disabled:opacity-50"
+            >
+              <span>{isSendingTelegram ? 'Sending...' : 'Send Daily Report'}</span>
+            </button>
+
+            {telegramStatus && (
+              <span className="text-xs font-bold text-emerald-600 animate-fade-in">
+                ✓ {telegramStatus}
+              </span>
+            )}
+          </div>
         </div>
+
+        {/* Loading Spinner / State */}
+        {isLoading && !data ? (
+          <div className="p-16 text-center text-gray-400 text-sm">
+            Loading executive metrics from database...
+          </div>
+        ) : (
+          data && (
+            <>
+              {/* Executive Metrics Cards */}
+              <ExecutiveMetricsCards
+                totalRevenue={data.summary.totalRevenue}
+                netProfit={data.summary.netProfit}
+                totalExpenses={data.summary.totalExpenses}
+                totalOrders={data.summary.totalOrders}
+                totalTips={data.summary.totalTips}
+                activeStaff={data.summary.activeStaff}
+              />
+
+              {/* 2-Column Analytics Grid */}
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-5">
+                <ExecutivePaymentChannels
+                  channels={data.channels}
+                  totalRevenue={data.summary.totalRevenue}
+                />
+                <CategorySalesChart
+                  categoryBreakdown={data.categoryBreakdown}
+                  topDishes={data.topDishes}
+                />
+              </div>
+
+              {/* Cashier Shift Audit & Over/Short Reconciliation */}
+              <CashierShiftAuditCard shifts={data.recentShifts} />
+
+              {/* Recent Orders Ledger Stream */}
+              <RecentOrdersLedger orders={data.recentOrders} />
+
+              {/* Quick Navigation Footer */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 pt-2">
+                <Link
+                  href="/admin/transactions"
+                  className="p-4 bg-white rounded-xl border border-gray-200 hover:border-red-300 hover:shadow-xs transition-all flex items-center justify-between"
+                >
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">All Transactions</h4>
+                    <p className="text-xs text-gray-500">Search and export order history</p>
+                  </div>
+                  <span className="text-gray-400 text-lg">→</span>
+                </Link>
+
+                <Link
+                  href="/admin/users"
+                  className="p-4 bg-white rounded-xl border border-gray-200 hover:border-red-300 hover:shadow-xs transition-all flex items-center justify-between"
+                >
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">User Management</h4>
+                    <p className="text-xs text-gray-500">Manage cashiers, managers & roles</p>
+                  </div>
+                  <span className="text-gray-400 text-lg">→</span>
+                </Link>
+
+                <Link
+                  href="/admin/settings"
+                  className="p-4 bg-white rounded-xl border border-gray-200 hover:border-red-300 hover:shadow-xs transition-all flex items-center justify-between"
+                >
+                  <div>
+                    <h4 className="text-sm font-bold text-gray-900">System Settings</h4>
+                    <p className="text-xs text-gray-500">Configure VAT, telegram, & accounts</p>
+                  </div>
+                  <span className="text-gray-400 text-lg">→</span>
+                </Link>
+              </div>
+            </>
+          )
+        )}
       </div>
-    </>
+    </div>
   );
 }

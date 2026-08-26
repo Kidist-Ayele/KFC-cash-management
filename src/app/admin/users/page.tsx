@@ -1,220 +1,330 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Header } from '@/components/shared/Header';
 import { StaffTable } from '@/components/manager/StaffTable';
 import { AddStaffModal } from '@/components/manager/AddStaffModal';
+import { EditStaffModal } from '@/components/admin/EditStaffModal';
+import { ConfirmModal } from '@/components/shared/ConfirmModal';
 
 export default function UsersManagementPage() {
-  const [users, setUsers] = useState([
-    {
-      id: '1',
-      name: 'Super Admin',
-      username: 'admin',
-      role: 'SUPER_ADMIN',
-      email: 'admin@kfc.com',
-      phone: '+251900000000',
-      status: 'ACTIVE',
-      joinedDate: '2024-01-01',
-    },
-    {
-      id: '2',
-      name: 'Manager M.',
-      username: 'manager_m',
-      role: 'MANAGER',
-      email: 'manager@kfc.com',
-      phone: '+251944567890',
-      status: 'ACTIVE',
-      joinedDate: '2024-01-01',
-    },
-    {
-      id: '3',
-      name: 'Sara T.',
-      username: 'sara_t',
-      role: 'MANAGER',
-      email: 'sara.t@kfc.com',
-      phone: '+251955678901',
-      status: 'ACTIVE',
-      joinedDate: '2024-02-15',
-    },
-    {
-      id: '4',
-      name: 'Cashier A',
-      username: 'cashier_a',
-      role: 'CASHIER',
-      email: 'cashier.a@kfc.com',
-      phone: '+251911234567',
-      status: 'ACTIVE',
-      joinedDate: '2024-01-15',
-    },
-    {
-      id: '5',
-      name: 'Desalegn',
-      username: 'desalegn',
-      role: 'WAITER',
-      email: 'desalegn@kfc.com',
-      phone: '+251922345678',
-      status: 'ACTIVE',
-      joinedDate: '2024-02-01',
-    },
-    {
-      id: '6',
-      name: 'Marta',
-      username: 'marta',
-      role: 'WAITER',
-      email: 'marta@kfc.com',
-      phone: '+251933456789',
-      status: 'ACTIVE',
-      joinedDate: '2024-02-01',
-    },
-  ]);
-
+  const [users, setUsers] = useState<any[]>([]);
   const [showAddModal, setShowAddModal] = useState(false);
+  const [editingStaff, setEditingStaff] = useState<any | null>(null);
+  const [deletingStaff, setDeletingStaff] = useState<any | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const [roleFilter, setRoleFilter] = useState('All');
   const [statusFilter, setStatusFilter] = useState('All');
+  const [searchQuery, setSearchQuery] = useState('');
+  const [isLoading, setIsLoading] = useState(true);
 
   const roles = ['All', 'SUPER_ADMIN', 'MANAGER', 'CASHIER', 'WAITER'];
   const statuses = ['All', 'ACTIVE', 'INACTIVE'];
 
-  const filteredUsers = users.filter(u => {
+  const fetchAllStaff = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const [usersRes, waitersRes] = await Promise.all([
+        fetch('/api/users'),
+        fetch('/api/waiters?all=true'),
+      ]);
+
+      const staffList: any[] = [];
+
+      if (usersRes.ok) {
+        const dbUsers = await usersRes.json();
+        dbUsers.forEach((u: any) => {
+          staffList.push({
+            id: u.id,
+            name: u.name,
+            username: u.email.split('@')[0],
+            role: u.role,
+            email: u.email,
+            phone: '—',
+            status: u.isActive ? 'ACTIVE' : 'INACTIVE',
+            joinedDate: new Date(u.createdAt).toISOString().split('T')[0],
+            isWaiter: false,
+          });
+        });
+      }
+
+      if (waitersRes.ok) {
+        const dbWaiters = await waitersRes.json();
+        dbWaiters.forEach((w: any) => {
+          staffList.push({
+            id: w.id,
+            name: w.name,
+            username: w.name.toLowerCase().replace(/\s+/g, '_'),
+            role: 'WAITER',
+            email: `${w.name.toLowerCase().replace(/\s+/g, '')}@kfc.com`,
+            phone: w.phone || '—',
+            status: w.isActive ? 'ACTIVE' : 'INACTIVE',
+            joinedDate: new Date(w.createdAt).toISOString().split('T')[0],
+            isWaiter: true,
+          });
+        });
+      }
+
+      setUsers(staffList);
+    } catch (err) {
+      console.error('Failed to load users:', err);
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    fetchAllStaff();
+  }, [fetchAllStaff]);
+
+  const filteredUsers = users.filter((u) => {
     const roleMatch = roleFilter === 'All' || u.role === roleFilter;
     const statusMatch = statusFilter === 'All' || u.status === statusFilter;
-    return roleMatch && statusMatch;
+    const query = searchQuery.toLowerCase().trim();
+    const queryMatch =
+      !query ||
+      u.name.toLowerCase().includes(query) ||
+      u.email.toLowerCase().includes(query) ||
+      u.role.toLowerCase().includes(query);
+    return roleMatch && statusMatch && queryMatch;
   });
 
-  const handleAddUser = (newUser: any) => {
-    const user = {
-      ...newUser,
-      id: `user-${Date.now()}`,
-      joinedDate: new Date().toISOString().split('T')[0],
-      status: 'ACTIVE',
-    };
-    setUsers([...users, user]);
-    setShowAddModal(false);
-    alert('User added successfully!');
-  };
+  const handleAddUser = async (newUser: any) => {
+    try {
+      if (newUser.role === 'WAITER') {
+        const res = await fetch('/api/waiters', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ name: newUser.name, phone: newUser.phone }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || 'Failed to add waiter');
+          return;
+        }
+      } else {
+        const res = await fetch('/api/users', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            name: newUser.name,
+            email: newUser.email,
+            password: newUser.password || 'password123',
+            role: newUser.role,
+          }),
+        });
+        if (!res.ok) {
+          const err = await res.json();
+          alert(err.error || 'Failed to add user');
+          return;
+        }
+      }
 
-  const handleToggleStatus = (id: string) => {
-    setUsers(users.map(u => 
-      u.id === id 
-        ? { ...u, status: u.status === 'ACTIVE' ? 'INACTIVE' : 'ACTIVE' } 
-        : u
-    ));
-  };
-
-  const handleEdit = (id: string) => {
-    alert(`Edit user ${id} - Feature coming soon`);
-  };
-
-  const handleDelete = (id: string) => {
-    if (confirm('Are you sure you want to delete this user?')) {
-      setUsers(users.filter(u => u.id !== id));
+      setShowAddModal(false);
+      await fetchAllStaff();
+    } catch (e: any) {
+      alert(e.message || 'Error saving user');
     }
   };
 
-  const activeCount = users.filter(u => u.status === 'ACTIVE').length;
-  const inactiveCount = users.filter(u => u.status === 'INACTIVE').length;
+  const handleEditClick = (id: string) => {
+    const target = users.find((u) => u.id === id);
+    if (target) {
+      setEditingStaff(target);
+    }
+  };
+
+  const handleSaveEdit = async (updated: any) => {
+    if (updated.isWaiter) {
+      const res = await fetch(`/api/waiters/${updated.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: updated.name, phone: updated.phone }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to update waiter');
+      }
+    } else {
+      const res = await fetch(`/api/users/${updated.id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: updated.name,
+          email: updated.email,
+          role: updated.role,
+          password: updated.password,
+        }),
+      });
+      if (!res.ok) {
+        const err = await res.json();
+        throw new Error(err.error || 'Failed to update user');
+      }
+    }
+
+    await fetchAllStaff();
+  };
+
+  const handleToggleStatus = async (id: string) => {
+    const target = users.find((u) => u.id === id);
+    if (!target) return;
+    const newStatus = target.status === 'ACTIVE' ? false : true;
+
+    try {
+      if (target.isWaiter) {
+        await fetch(`/api/waiters/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isActive: newStatus }),
+        });
+      } else {
+        await fetch(`/api/users/${id}`, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ isActive: newStatus }),
+        });
+      }
+      setUsers((prev) =>
+        prev.map((u) => (u.id === id ? { ...u, status: newStatus ? 'ACTIVE' : 'INACTIVE' } : u))
+      );
+    } catch (err) {
+      console.error('Failed to toggle status:', err);
+    }
+  };
+
+  const handleDelete = (id: string) => {
+    const target = users.find((u) => u.id === id);
+    if (target) {
+      setDeletingStaff(target);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!deletingStaff) return;
+    setIsDeleting(true);
+    try {
+      if (deletingStaff.isWaiter) {
+        await fetch(`/api/waiters/${deletingStaff.id}`, { method: 'DELETE' });
+      } else {
+        await fetch(`/api/users/${deletingStaff.id}`, { method: 'DELETE' });
+      }
+      setDeletingStaff(null);
+      await fetchAllStaff();
+    } catch (err) {
+      console.error('Failed to delete staff:', err);
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const activeCount = users.filter((u) => u.status === 'ACTIVE').length;
+  const inactiveCount = users.filter((u) => u.status === 'INACTIVE').length;
+  const cashierCount = users.filter((u) => u.role === 'CASHIER').length;
+  const waiterCount = users.filter((u) => u.role === 'WAITER').length;
 
   return (
-    <>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header role="admin" />
+    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+      <Header role="admin" />
 
-        <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User Management</h1>
-              <p className="text-sm text-gray-600 mt-1">Manage all system users and permissions</p>
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-gray-200">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+              User & Staff Management
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Control access roles for Super Admins, Managers, Cashiers, and Waiters
+            </p>
+          </div>
+          <button
+            onClick={() => setShowAddModal(true)}
+            className="px-4 py-2.5 bg-[#E4002B] hover:bg-[#C4002B] text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2"
+          >
+            <span>+</span>
+            <span>Add New Staff</span>
+          </button>
+        </div>
+
+        {/* Stats Cards */}
+        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs">
+            <span className="text-xs font-medium text-gray-500">Total Staff</span>
+            <p className="text-xl sm:text-2xl font-black text-gray-900 mt-1">{users.length}</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs">
+            <span className="text-xs font-medium text-gray-500">Active Cashiers</span>
+            <p className="text-xl sm:text-2xl font-black text-emerald-600 mt-1">{cashierCount}</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs">
+            <span className="text-xs font-medium text-gray-500">Active Waiters</span>
+            <p className="text-xl sm:text-2xl font-black text-amber-600 mt-1">{waiterCount}</p>
+          </div>
+          <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs">
+            <span className="text-xs font-medium text-gray-500">Inactive Staff</span>
+            <p className="text-xl sm:text-2xl font-black text-red-600 mt-1">{inactiveCount}</p>
+          </div>
+        </div>
+
+        {/* Filters & Search Bar */}
+        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs space-y-3">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+            <div className="flex flex-wrap items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 mr-1">Role:</span>
+              {roles.map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRoleFilter(r)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    roleFilter === r
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {r}
+                </button>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2">
+              <span className="text-xs font-semibold text-gray-500 mr-1">Status:</span>
+              {statuses.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setStatusFilter(s)}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                    statusFilter === s
+                      ? 'bg-gray-900 text-white'
+                      : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                  }`}
+                >
+                  {s}
+                </button>
+              ))}
             </div>
           </div>
 
-          {/* Stats Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-sm text-gray-600">Total Users</p>
-              <p className="text-2xl font-bold text-gray-900">{users.length}</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-sm text-gray-600">Active</p>
-              <p className="text-2xl font-bold text-green-600">{activeCount}</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-sm text-gray-600">Inactive</p>
-              <p className="text-2xl font-bold text-red-600">{inactiveCount}</p>
-            </div>
-            <div className="bg-white rounded-lg p-4 border border-gray-200">
-              <p className="text-sm text-gray-600">Roles</p>
-              <p className="text-2xl font-bold text-purple-600">4</p>
-            </div>
+          <div>
+            <input
+              type="text"
+              placeholder="Search by name, email, or role..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:border-red-500"
+            />
           </div>
+        </div>
 
-          {/* Filters Bar */}
-          <div className="bg-white rounded-lg p-4 border border-gray-200 mb-6">
-            <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-4">
-              <div className="flex flex-col sm:flex-row gap-4 w-full lg:w-auto">
-                <div>
-                  <label className="text-xs text-gray-600 mb-1 block">Filter by Role</label>
-                  <div className="flex flex-wrap gap-2">
-                    {roles.map(role => (
-                      <button
-                        key={role}
-                        onClick={() => setRoleFilter(role)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                          roleFilter === role
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {role}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <div>
-                  <label className="text-xs text-gray-600 mb-1 block">Filter by Status</label>
-                  <div className="flex flex-wrap gap-2">
-                    {statuses.map(status => (
-                      <button
-                        key={status}
-                        onClick={() => setStatusFilter(status)}
-                        className={`px-3 py-1.5 rounded-lg text-sm font-medium ${
-                          statusFilter === status
-                            ? 'bg-purple-600 text-white'
-                            : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-                        }`}
-                      >
-                        {status}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              </div>
-              <button
-                onClick={() => setShowAddModal(true)}
-                className="w-full sm:w-auto px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 flex items-center justify-center gap-2"
-              >
-                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
-                Add User
-              </button>
-            </div>
-          </div>
-
-          {/* Users Table */}
+        {/* Staff Table */}
+        {isLoading ? (
+          <div className="p-12 text-center text-gray-400 text-xs">Loading staff records...</div>
+        ) : (
           <StaffTable
             staff={filteredUsers}
-            onEdit={handleEdit}
+            onEdit={handleEditClick}
             onDelete={handleDelete}
             onToggleStatus={handleToggleStatus}
           />
-
-          {filteredUsers.length === 0 && (
-            <div className="text-center py-12 text-gray-400 bg-white rounded-lg border border-gray-200">
-              <p>No users found</p>
-            </div>
-          )}
-        </div>
+        )}
       </div>
 
       <AddStaffModal
@@ -222,6 +332,25 @@ export default function UsersManagementPage() {
         onClose={() => setShowAddModal(false)}
         onSave={handleAddUser}
       />
-    </>
+
+      <EditStaffModal
+        isOpen={Boolean(editingStaff)}
+        onClose={() => setEditingStaff(null)}
+        staff={editingStaff}
+        onSave={handleSaveEdit}
+      />
+
+      <ConfirmModal
+        isOpen={Boolean(deletingStaff)}
+        onClose={() => setDeletingStaff(null)}
+        onConfirm={handleConfirmDelete}
+        isLoading={isDeleting}
+        title="Remove Staff Member"
+        message={`Are you sure you want to remove "${deletingStaff?.name}"? Their account or floor permissions will be revoked.`}
+        confirmLabel="Yes, Remove"
+        cancelLabel="Cancel"
+        isDestructive={true}
+      />
+    </div>
   );
 }
