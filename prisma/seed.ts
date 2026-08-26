@@ -9,10 +9,10 @@ async function main() {
   // Create default users
   await prisma.user.upsert({
     where: { email: 'cashier@kfc.com' },
-    update: {},
+    update: { name: 'Kalkidan T.', role: 'CASHIER' },
     create: {
       email: 'cashier@kfc.com',
-      name: 'Lishan B.',
+      name: 'Kalkidan T.',
       password: 'password123',
       role: 'CASHIER',
     },
@@ -20,10 +20,10 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'manager@kfc.com' },
-    update: {},
+    update: { name: 'Lishan Bekele', role: 'MANAGER' },
     create: {
       email: 'manager@kfc.com',
-      name: 'Manager M.',
+      name: 'Lishan Bekele',
       password: 'password123',
       role: 'MANAGER',
     },
@@ -31,10 +31,10 @@ async function main() {
 
   await prisma.user.upsert({
     where: { email: 'admin@kfc.com' },
-    update: {},
+    update: { name: 'Samuel Mulat', role: 'SUPER_ADMIN' },
     create: {
       email: 'admin@kfc.com',
-      name: 'Super Admin',
+      name: 'Samuel Mulat',
       password: 'password123',
       role: 'SUPER_ADMIN',
     },

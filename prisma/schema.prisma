@@ -204,3 +204,36 @@ model ShiftReport {
 
   user User @relation(fields: [userId], references: [id])
 }
+
+// Branch model for multi-location scalability
+model Branch {
+  id          String   @id @default(cuid())
+  name        String   @unique
+  location    String
+  manager     String?
+  phone       String?
+  status      String   @default("ACTIVE") // ACTIVE, COMING_SOON, INACTIVE
+  staffCount  Int      @default(0)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+// System-wide persistent settings
+model SystemSetting {
+  id             String   @id @default("default")
+  companyName    String   @default("Kuku Fried Chicken (KFC)")
+  branchName     String   @default("Main Branch — Ayat, Addis Ababa")
+  ownerName      String   @default("Samuel Mulat")
+  managerName    String   @default("Lishan Bekele")
+  vatRate        Float    @default(15)
+  currency       String   @default("ETB")
+  timezone       String   @default("Africa/Addis_Ababa")
+  telegramBot    String   @default("@kuku_kfc_report_bot")
+  telegramChatId String   @default("1794854523")
+  telebirrActive Boolean  @default(true)
+  kukuCbeActive  Boolean  @default(true)
+  samuelCbeActive Boolean @default(true)
+  cashActive     Boolean  @default(true)
+  updatedAt      DateTime @updatedAt
+}
+
