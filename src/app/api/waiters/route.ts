@@ -1,11 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-// GET /api/waiters - List all active waiters
-export async function GET() {
+// GET /api/waiters - List waiters
+export async function GET(request: Request) {
   try {
+    const { searchParams } = new URL(request.url);
+    const includeAll = searchParams.get('all') === 'true';
+
     let waiters = await prisma.waiter.findMany({
-      where: { isActive: true },
+      where: includeAll ? undefined : { isActive: true },
       orderBy: { name: 'asc' },
     });
 
