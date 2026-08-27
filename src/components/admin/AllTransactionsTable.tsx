@@ -19,9 +19,10 @@ interface Transaction {
 
 interface AllTransactionsTableProps {
   transactions: Transaction[];
+  onViewDetails?: (transaction: any) => void;
 }
 
-export function AllTransactionsTable({ transactions }: AllTransactionsTableProps) {
+export function AllTransactionsTable({ transactions, onViewDetails }: AllTransactionsTableProps) {
   const getPaymentMethodColor = (method: string) => {
     switch (method) {
       case 'CASH': return 'bg-green-100 text-green-700';
@@ -90,7 +91,10 @@ export function AllTransactionsTable({ transactions }: AllTransactionsTableProps
                 </td>
                 <td className="px-4 py-3 text-sm text-gray-600">{transaction.timestamp}</td>
                 <td className="px-4 py-3 text-center">
-                  <button className="text-purple-600 hover:text-purple-800 font-medium text-sm">
+                  <button
+                    onClick={() => onViewDetails?.(transaction)}
+                    className="text-[#E4002B] hover:text-[#C4002B] font-semibold text-xs"
+                  >
                     View Details
                   </button>
                 </td>
@@ -106,7 +110,7 @@ export function AllTransactionsTable({ transactions }: AllTransactionsTableProps
           <div key={transaction.id} className="p-4">
             <div className="flex items-start justify-between mb-3">
               <div>
-                <p className="font-mono text-sm font-bold text-purple-600 mb-1">
+                <p className="font-mono text-sm font-bold text-gray-900 mb-1">
                   {transaction.orderNumber}
                 </p>
                 <p className="text-sm font-medium text-gray-900">{transaction.branch}</p>
@@ -139,10 +143,13 @@ export function AllTransactionsTable({ transactions }: AllTransactionsTableProps
             <div className="pt-3 border-t border-gray-200 flex items-center justify-between">
               <div>
                 <p className="text-xs text-gray-600">Total Amount</p>
-                <p className="text-lg font-bold text-green-600">{formatCurrency(transaction.total)}</p>
-                <p className="text-xs text-gray-500">VAT: {formatCurrency(transaction.vat)}</p>
+                <p className="text-lg font-bold text-gray-900">{formatCurrency(transaction.total)}</p>
+                <p className="text-xs text-gray-500">VAT (15% Inc.): {formatCurrency(transaction.vat)}</p>
               </div>
-              <button className="px-4 py-2 bg-purple-50 text-purple-600 rounded-lg text-sm font-medium hover:bg-purple-100">
+              <button
+                onClick={() => onViewDetails?.(transaction)}
+                className="px-4 py-2 bg-red-50 text-[#E4002B] rounded-lg text-sm font-medium hover:bg-red-100"
+              >
                 Details
               </button>
             </div>

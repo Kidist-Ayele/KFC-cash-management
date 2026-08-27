@@ -77,8 +77,8 @@ export default function AdminLayout({
       <Sidebar 
         role="admin"
         navItems={adminNavItems}
-        userName="Super Admin"
-        userRole="Super Admin"
+        userName="Samuel Mulat"
+        userRole="Owner / Super Admin"
       />
       {children}
     </div>

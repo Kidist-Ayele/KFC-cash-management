@@ -1,147 +1,193 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Header } from '@/components/shared/Header';
 
 export default function AuditLogsPage() {
-  const [logs] = useState([
-    {
-      id: '1',
-      user: 'Manager M.',
-      action: 'Updated menu item',
-      details: 'Changed price of Zinger Burger from 400 to 450 ETB',
-      timestamp: '2024-06-30 10:30:00',
-      type: 'UPDATE',
-    },
-    {
-      id: '2',
-      user: 'Super Admin',
-      action: 'Created new user',
-      details: 'Added Cashier A to Main Branch',
-      timestamp: '2024-06-30 09:15:00',
-      type: 'CREATE',
-    },
-    {
-      id: '3',
-      user: 'Cashier A',
-      action: 'Processed order',
-      details: 'Order #9450 - Total: 890 ETB',
-      timestamp: '2024-06-30 08:45:00',
-      type: 'ORDER',
-    },
-    {
-      id: '4',
-      user: 'Manager M.',
-      action: 'Deleted transaction',
-      details: 'Removed duplicate order #9449',
-      timestamp: '2024-06-30 08:30:00',
-      type: 'DELETE',
-    },
-  ]);
+  const [logs, setLogs] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [typeFilter, setTypeFilter] = useState('ALL');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const getTypeColor = (type: string) => {
+  useEffect(() => {
+    async function loadAuditLogs() {
+      setIsLoading(true);
+      try {
+        const res = await fetch('/api/admin/audit');
+        if (res.ok) {
+          const data = await res.json();
+          setLogs(data);
+        }
+      } catch (err) {
+        console.error('Failed to load audit logs:', err);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    loadAuditLogs();
+  }, []);
+
+  const getTypeBadge = (type: string) => {
     switch (type) {
-      case 'CREATE': return 'bg-green-100 text-green-700';
-      case 'UPDATE': return 'bg-blue-100 text-blue-700';
-      case 'DELETE': return 'bg-red-100 text-red-700';
-      case 'ORDER': return 'bg-purple-100 text-purple-700';
-      default: return 'bg-gray-100 text-gray-700';
+      case 'ORDER':
+        return 'bg-blue-50 text-blue-700 border-blue-200';
+      case 'SHIFT':
+        return 'bg-purple-50 text-purple-700 border-purple-200';
+      case 'EXPENSE':
+        return 'bg-amber-50 text-amber-700 border-amber-200';
+      case 'USER':
+        return 'bg-emerald-50 text-emerald-700 border-emerald-200';
+      case 'ALERT':
+        return 'bg-red-50 text-red-700 border-red-200 font-bold';
+      default:
+        return 'bg-gray-50 text-gray-700 border-gray-200';
     }
   };
 
+  const filteredLogs = logs.filter((log) => {
+    const matchType = typeFilter === 'ALL' || log.type === typeFilter;
+    const query = searchQuery.toLowerCase().trim();
+    const matchQuery =
+      !query ||
+      log.user.toLowerCase().includes(query) ||
+      log.action.toLowerCase().includes(query) ||
+      log.details.toLowerCase().includes(query);
+    return matchType && matchQuery;
+  });
+
+  const handleExportCSV = () => {
+    if (filteredLogs.length === 0) return;
+    const headers = ['Timestamp,User,Role,Action,Type,Details\n'];
+    const rows = filteredLogs.map((l) =>
+      `"${new Date(l.timestamp).toISOString()}","${l.user}","${l.role}","${l.action}","${l.type}","${l.details}"\n`
+    );
+    const blob = new Blob([...headers, ...rows], { type: 'text/csv' });
+    const url = window.URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `kfc-audit-log-${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    window.URL.revokeObjectURL(url);
+  };
+
   return (
-    <>
-      <div className="flex-1 flex flex-col overflow-hidden">
-        <Header role="admin" />
+    <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
+      <Header role="admin" />
 
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-6 gap-3">
-            <div>
-              <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Audit Logs</h1>
-              <p className="text-sm text-gray-600 mt-1">Track all system activities and changes</p>
-            </div>
-            <button className="w-full sm:w-auto px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm flex items-center justify-center gap-2">
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-              </svg>
-              Export Logs
-            </button>
+      <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 bg-white p-5 rounded-xl border border-gray-200">
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black text-gray-900 tracking-tight">
+              System Audit & Compliance Log
+            </h1>
+            <p className="text-xs text-gray-500 mt-0.5">
+              Immutable record of cashier shifts, drawer reconciliation, orders, expenses & staff actions
+            </p>
+          </div>
+          <button
+            onClick={handleExportCSV}
+            className="px-4 py-2.5 bg-gray-900 hover:bg-gray-800 text-white rounded-lg text-xs font-bold shadow-xs transition-colors flex items-center justify-center gap-2"
+          >
+            <span>↓</span>
+            <span>Export Audit Log</span>
+          </button>
+        </div>
+
+        {/* Filters */}
+        <div className="bg-white rounded-xl p-4 border border-gray-200 shadow-xs flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-xs font-semibold text-gray-500 mr-1">Activity:</span>
+            {['ALL', 'ORDER', 'SHIFT', 'EXPENSE', 'USER', 'ALERT'].map((t) => (
+              <button
+                key={t}
+                onClick={() => setTypeFilter(t)}
+                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition-all ${
+                  typeFilter === t
+                    ? 'bg-gray-900 text-white'
+                    : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+                }`}
+              >
+                {t}
+              </button>
+            ))}
           </div>
 
-          {/* Filters */}
-          <div className="bg-white rounded-lg p-4 border border-gray-200 mb-6">
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-              <input
-                type="date"
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-              />
-              <select className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600">
-                <option>All Actions</option>
-                <option>CREATE</option>
-                <option>UPDATE</option>
-                <option>DELETE</option>
-                <option>ORDER</option>
-              </select>
-              <input
-                type="text"
-                placeholder="Search user..."
-                className="px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-purple-600"
-              />
-            </div>
+          <div className="w-full md:w-72">
+            <input
+              type="text"
+              placeholder="Search user, action, details..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="w-full px-3 py-2 border border-gray-200 rounded-lg text-xs font-medium focus:outline-none focus:border-red-500"
+            />
           </div>
+        </div>
 
-          {/* Logs Table */}
-          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
-            <div className="hidden lg:block overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 border-b border-gray-200">
+        {/* Logs Table */}
+        <div className="bg-white rounded-xl border border-gray-200 shadow-xs overflow-hidden">
+          {isLoading ? (
+            <div className="p-16 text-center text-gray-400 text-xs">Loading audit events...</div>
+          ) : filteredLogs.length === 0 ? (
+            <div className="p-16 text-center text-gray-400 text-xs">No audit events match your filter.</div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-left text-xs">
+                <thead className="bg-gray-50/80 border-b border-gray-200 text-gray-500 uppercase text-[11px] font-semibold">
                   <tr>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Timestamp</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">User</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Action</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Details</th>
-                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase">Type</th>
+                    <th className="py-3 px-4">Timestamp</th>
+                    <th className="py-3 px-4">Staff Member</th>
+                    <th className="py-3 px-4">Action</th>
+                    <th className="py-3 px-4">Category</th>
+                    <th className="py-3 px-4">Operational Details</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-gray-200">
-                  {logs.map((log) => (
-                    <tr key={log.id} className="hover:bg-gray-50">
-                      <td className="px-6 py-4 text-sm text-gray-600">{log.timestamp}</td>
-                      <td className="px-6 py-4 text-sm font-medium">{log.user}</td>
-                      <td className="px-6 py-4 text-sm">{log.action}</td>
-                      <td className="px-6 py-4 text-sm text-gray-600">{log.details}</td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-xs font-medium ${getTypeColor(log.type)}`}>
-                          {log.type}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                <tbody className="divide-y divide-gray-100">
+                  {filteredLogs.map((log) => {
+                    const dateObj = new Date(log.timestamp);
+                    const timeStr = dateObj.toLocaleTimeString('en-US', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                      hour12: true,
+                    });
+                    const dateStr = dateObj.toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                    });
+
+                    return (
+                      <tr key={log.id} className="hover:bg-gray-50/50 transition-colors">
+                        <td className="py-3 px-4 font-mono text-gray-500 whitespace-nowrap">
+                          <span className="font-semibold text-gray-700">{dateStr}</span>{' '}
+                          <span className="text-[10px] text-gray-400">{timeStr}</span>
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span className="font-bold text-gray-900 block">{log.user}</span>
+                          <span className="text-[10px] text-gray-400">{log.role}</span>
+                        </td>
+                        <td className="py-3 px-4 font-medium text-gray-800 whitespace-nowrap">
+                          {log.action}
+                        </td>
+                        <td className="py-3 px-4 whitespace-nowrap">
+                          <span
+                            className={`px-2 py-0.5 rounded-md border text-[10px] uppercase font-bold ${getTypeBadge(
+                              log.type
+                            )}`}
+                          >
+                            {log.type}
+                          </span>
+                        </td>
+                        <td className="py-3 px-4 text-gray-600 leading-relaxed font-mono text-[11px]">
+                          {log.details}
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>
-
-            {/* Mobile View */}
-            <div className="lg:hidden divide-y divide-gray-200">
-              {logs.map((log) => (
-                <div key={log.id} className="p-4">
-                  <div className="flex items-start justify-between mb-2">
-                    <div>
-                      <p className="font-medium text-sm">{log.user}</p>
-                      <p className="text-xs text-gray-500">{log.timestamp}</p>
-                    </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${getTypeColor(log.type)}`}>
-                      {log.type}
-                    </span>
-                  </div>
-                  <p className="text-sm font-medium text-gray-900 mb-1">{log.action}</p>
-                  <p className="text-xs text-gray-600">{log.details}</p>
-                </div>
-              ))}
-            </div>
-          </div>
+          )}
         </div>
       </div>
-    </>
+    </div>
   );
 }
